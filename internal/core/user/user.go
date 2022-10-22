@@ -4,7 +4,8 @@ type User struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
-	PassHash string `json:"password"`
+	Role     string `json:"role"`
+	PassHash string `json:"-"`
 }
 
 // NewUser
@@ -18,6 +19,18 @@ type NewUser struct {
 // UpdateUser
 // not sure about internals yet, but it is used for updating user data
 type UpdateUser struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
+	Username    *string `json:"username"`
+	Email       *string `json:"email"`
+	NewPassword *string `json:"new-password"`
+	Password    *string `json:"password"`
+}
+
+// Model
+// database model
+type Model struct {
+	ID       *int
+	Email    *string
+	Username *string
+	Role     *string
+	PassHash *string
 }

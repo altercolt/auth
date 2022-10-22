@@ -19,6 +19,12 @@ type Payload struct {
 	Exp    int64  `json:"exp"`
 }
 
+// Valid
+// TODO("FINISH")
+func (p Payload) Valid() error {
+	return nil
+}
+
 // RefreshToken
 // is model stored in the database
 type RefreshToken struct {
