@@ -3,26 +3,20 @@ package main
 import (
 	"auth/cmd/api/handlers"
 	"auth/internal/sys"
-	"errors"
+	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 var logo = "                                                                                                                                               \n    ,o888888o.        ,o888888o.     8 8888         8888888 8888888888          .8.          8 8888      88 8888888 8888888888 8 8888        8 \n   8888     `88.   . 8888     `88.   8 8888               8 8888               .888.         8 8888      88       8 8888       8 8888        8 \n,8 8888       `8. ,8 8888       `8b  8 8888               8 8888              :88888.        8 8888      88       8 8888       8 8888        8 \n88 8888           88 8888        `8b 8 8888               8 8888             . `88888.       8 8888      88       8 8888       8 8888        8 \n88 8888           88 8888         88 8 8888               8 8888            .8. `88888.      8 8888      88       8 8888       8 8888        8 \n88 8888           88 8888         88 8 8888               8 8888           .8`8. `88888.     8 8888      88       8 8888       8 8888        8 \n88 8888           88 8888        ,8P 8 8888               8 8888          .8' `8. `88888.    8 8888      88       8 8888       8 8888888888888 \n`8 8888       .8' `8 8888       ,8P  8 8888               8 8888         .8'   `8. `88888.   ` 8888     ,8P       8 8888       8 8888        8 \n   8888     ,88'   ` 8888     ,88'   8 8888               8 8888        .888888888. `88888.    8888   ,d8P        8 8888       8 8888        8 \n    `8888888P'        `8888888P'     8 888888888888       8 8888       .8'       `8. `88888.    `Y88888P'         8 8888       8 8888        8 \n\n"
 var version = "SNAPSHOT 0.0.1"
 
-type Config struct {
-	Env         string
-	Version     string
-	Addr        string
-	PostgresDSN string
-}
-
 func main() {
-	fmt.Fprintf(os.Stdout, "\033[0;32m%s\033[0m", logo)
+	fmt.Printf("\033[0;32m%s\033[0m", logo)
 
 	log.Println("Starting...")
 	log.Printf("VERSION : %s", version)
@@ -37,13 +31,15 @@ func main() {
 	log.Printf("Starting %s environment\n", conf.Env)
 
 	log.Println("Initializing logger...")
-	logger, err := Logger(conf.Env)
+	logger, err := sys.Logger(conf.Env)
 	if err != nil {
 		log.Fatalf("Failed to create logger : %v", err)
 	}
 
 	log.Println("Initializing application...")
-	shutdown := make(chan os.Signal)
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
 	app, err := handlers.API(shutdown, logger)
 	if err != nil {
@@ -52,31 +48,28 @@ func main() {
 
 	log.Println("Starting server...")
 	server := http.Server{
-		Addr:    "localhost:8080",
+		Addr:    conf.Addr,
 		Handler: app,
 	}
 
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatalf("err : %v", err)
+	serverErrChan := make(chan error, 1)
+
+	go func() {
+		serverErrChan <- server.ListenAndServe()
+	}()
+
+	log.Printf("Started the server on %s", conf.Addr)
+
+	select {
+	case <-serverErrChan:
+		log.Fatalf("server error: %v", err)
+	case <-shutdown:
+		if err := server.Shutdown(context.Background()); err != nil {
+			log.Fatalf("Error when server.Shutdown() : %v\n", err)
+			server.Close()
+			return
+		}
+		log.Println("Server was gracefully stopped")
+		return
 	}
-
-}
-
-func Logger(env string) (*zap.SugaredLogger, error) {
-	var log *zap.Logger
-	var err error
-
-	if env == "PROD" {
-		log, err = zap.NewProduction()
-	} else if env == "DEV" {
-		log, err = zap.NewDevelopment()
-	} else {
-		return nil, errors.New("cannot determine env type")
-	}
-
-	if err != nil {
-		return nil, nil
-	}
-
-	return log.Sugar(), nil
 }

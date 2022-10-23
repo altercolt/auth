@@ -10,6 +10,5 @@ import (
 
 func API(shutdown chan os.Signal, log *zap.SugaredLogger) (http.Handler, error) {
 	app := web.NewApp(mux.NewRouter(), shutdown)
-
 	return app, nil
 }

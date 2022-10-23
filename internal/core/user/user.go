@@ -1,11 +1,13 @@
 package user
 
+import "auth/internal/core/role"
+
 type User struct {
-	ID       int    `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
-	PassHash string `json:"-"`
+	ID       int       `json:"id"`
+	Username string    `json:"username"`
+	Email    string    `json:"email"`
+	Role     role.Role `json:"role"`
+	PassHash string    `json:"-"`
 }
 
 // NewUser
@@ -31,6 +33,6 @@ type Model struct {
 	ID       *int
 	Email    *string
 	Username *string
-	Role     *string
+	Role     *role.Role
 	PassHash *string
 }

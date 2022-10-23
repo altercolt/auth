@@ -20,10 +20,7 @@ func (r UserRepository) Create(ctx context.Context, m user.Model) error {
 	query := `INSERT INTO users (email, username, passhash) 
 						VALUES($1, $2, $3);`
 
-	_, err := r.db.Exec(ctx, query, m.Email, m.Username, m.PassHash)
-	if err != nil {
-		return err
-	}
+	_, _ = r.db.Exec(ctx, query, m.Email, m.Username, m.PassHash)
 
 	return nil
 }
