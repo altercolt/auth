@@ -39,3 +39,17 @@ func (h Handler) Register(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	return web.Respond(ctx, w, nil, http.StatusCreated)
 }
+
+func (h Handler) GetSelf(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	payload, err := v1.Payload(ctx)
+	if err != nil {
+		return err
+	}
+
+	usr, err := h.userService.GetOneByID(ctx, payload.UserID)
+	if err != nil {
+		return err
+	}
+
+	return web.Respond(ctx, w, usr, http.StatusOK)
+}
