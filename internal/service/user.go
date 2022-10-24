@@ -2,6 +2,7 @@ package service
 
 import (
 	"auth/internal/core/user"
+	"auth/internal/repository"
 	"context"
 	"errors"
 	"fmt"
@@ -134,25 +135,25 @@ func (u UserService) Create(ctx context.Context, nu user.New) error {
 
 	if nu.Username != "" {
 		usr, err := u.GetOneByUsername(ctx, nu.Username)
-		if err != nil {
+		if err != nil && !errors.Is(err, repository.ErrNotFound) {
 			u.log.Errorw("error when creating new user", "err", err, "NewUser", nu)
 			return fmt.Errorf("userService.Create, err : %w", err)
 		}
 
 		if usr != (user.User{}) {
-			return errors.New("user with such username already exists")
+			return ErrUsernameAlreadyExists
 		}
 	}
 
 	if nu.Email != "" {
 		usr, err := u.GetOneByEmail(ctx, nu.Email)
-		if err != nil {
+		if err != nil && !errors.Is(err, repository.ErrNotFound) {
 			u.log.Errorw("error when creating new user", "err", err, "NewUser", nu)
 			return fmt.Errorf("userService.Create, err : %w", err)
 		}
 
 		if usr != (user.User{}) {
-			return errors.New("user with such email already exists")
+			return ErrEmailAlreadyExists
 		}
 	}
 

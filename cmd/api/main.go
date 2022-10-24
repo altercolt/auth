@@ -41,7 +41,8 @@ func main() {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
-	app, err := handlers.API(shutdown, logger)
+	//TODO:
+	app, err := handlers.API(shutdown, logger, nil)
 	if err != nil {
 		log.Fatalf("Cannot initialize application : %v", err)
 	}

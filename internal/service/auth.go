@@ -21,7 +21,7 @@ type AuthService struct {
 }
 
 func NewAuthService(log *zap.SugaredLogger, keystore *keystore.KeyStore, userService user.Service, tokenRepo auth.TokenRepository, kid string) auth.Service {
-	return AuthService{
+	return &AuthService{
 		log:         log,
 		userService: userService,
 		tokenRepo:   tokenRepo,
@@ -79,20 +79,20 @@ func (a *AuthService) Login(ctx context.Context, login auth.Login) (auth.TokenPa
 }
 
 func (a *AuthService) ValidateAccess(ctx context.Context, accessToken string) (auth.Payload, error) {
-	var payload auth.Payload
 
 	keyFunc := func(*jwt.Token) (interface{}, error) {
 		return a.keyStore.PublicKey(a.kid)
 	}
 
-	tkn, err := jwt.ParseWithClaims(accessToken, &payload, keyFunc)
+	tkn, err := jwt.ParseWithClaims(accessToken, &auth.Payload{}, keyFunc)
 	if err != nil {
 		return auth.Payload{}, fmt.Errorf("error when authorizing user : %w", err)
 	}
 
-	if payload, ok := tkn.Claims.(*auth.Payload); ok && tkn.Valid {
-		return *payload, nil
+	payload, ok := tkn.Claims.(*auth.Payload)
+	if !ok || !tkn.Valid {
+		return auth.Payload{}, auth.ErrInvalidAccessToken
 	}
 
-	return auth.Payload{}, auth.ErrInvalidAccessToken
+	return *payload, nil
 }
