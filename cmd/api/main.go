@@ -70,6 +70,5 @@ func main() {
 			return
 		}
 		log.Println("Server was gracefully stopped")
-		return
 	}
 }

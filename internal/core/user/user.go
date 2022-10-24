@@ -10,17 +10,17 @@ type User struct {
 	PassHash string    `json:"-"`
 }
 
-// NewUser
+// New
 // is used for creating new user record in the database
-type NewUser struct {
+type New struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-// UpdateUser
+// Update
 // not sure about internals yet, but it is used for updating user data
-type UpdateUser struct {
+type Update struct {
 	Username    *string `json:"username"`
 	Email       *string `json:"email"`
 	NewPassword *string `json:"new-password"`
