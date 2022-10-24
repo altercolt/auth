@@ -2,6 +2,7 @@ package auth
 
 import (
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"time"
 )
 
@@ -10,18 +11,62 @@ const (
 	RefreshTokenExpiration = time.Hour * 24 * 7
 )
 
+var (
+	ErrInvalidAccessToken  = errors.New("invalid access token")
+	ErrInvalidRefreshToken = errors.New("invalid refresh token")
+)
+
+type Login struct {
+	Login    string `json:"login"`
+	Password string `json:"password"`
+}
+
 // Payload
 // is the claims part of jwt token
 // stored in context
 type Payload struct {
-	UserID int    `json:"user_id"`
+	UserID int    `json:"sub"`
 	Role   string `json:"role"`
 	Exp    int64  `json:"exp"`
+}
+
+func NewPayload(userID int, role string) Payload {
+	return Payload{
+		UserID: userID,
+		Role:   role,
+		Exp:    time.Now().Add(AccessTokenExpiration).Unix(),
+	}
 }
 
 // Valid
 // TODO("FINISH")
 func (p Payload) Valid() error {
+	now := time.Now()
+	if now.After(time.Unix(p.Exp, 0)) {
+		return ErrInvalidAccessToken
+	}
+
+	return nil
+}
+
+type RefreshPayload struct {
+	UserID int   `json:"refresh_sub"`
+	Exp    int64 `json:"refresh_exp"`
+}
+
+func NewRefreshPayload(userID int) RefreshPayload {
+	return RefreshPayload{
+		UserID: userID,
+		Exp:    time.Now().Add(RefreshTokenExpiration).Unix(),
+	}
+}
+
+func (p RefreshPayload) Valid() error {
+	now := time.Now()
+	if now.After(time.Unix(p.Exp, 0)) {
+		return ErrInvalidAccessToken
+	}
+
 	return nil
 }
 

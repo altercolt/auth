@@ -10,6 +10,7 @@ type Repository interface {
 	Update(ctx context.Context, m Model) error
 	Fetch(ctx context.Context, filter Filter) ([]User, error)
 	FetchOne(ctx context.Context, filter Filter) (User, error)
+	FetchOr(ctx context.Context, filter Filter) ([]User, error)
 }
 
 type Filter struct {
