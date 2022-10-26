@@ -20,7 +20,7 @@ func main() {
 
 	log.Println("Starting...")
 	log.Printf("VERSION : %s", version)
-
+	ctx := context.Background()
 	// Parsing configs from env file
 	log.Println("Parsing configs...")
 	conf, err := sys.NewConfigWithEnv()
@@ -41,8 +41,13 @@ func main() {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
+	db, err := sys.Postgres(ctx, conf.Postgres.DSN)
+	if err != nil {
+		log.Fatalf("Cannot connect to the database : %v", err)
+	}
+
 	//TODO:
-	app, err := handlers.API(shutdown, logger, nil)
+	app, err := handlers.API(shutdown, logger, db)
 	if err != nil {
 		log.Fatalf("Cannot initialize application : %v", err)
 	}

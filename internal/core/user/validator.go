@@ -1,7 +1,6 @@
 package user
 
 import (
-	"auth/internal/core/errors"
 	"net/mail"
 )
 

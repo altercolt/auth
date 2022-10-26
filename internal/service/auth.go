@@ -40,12 +40,10 @@ func (a *AuthService) Login(ctx context.Context, login auth.Login) (auth.TokenPa
 	}
 
 	if err != nil {
-		a.log.Errorw("authenticating user", "err", err, "login", login)
 		return auth.TokenPair{}, err
 	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(usr.PassHash), []byte(login.Password)); err != nil {
-		a.log.Errorw("authenticating user", "err", err, "login", login)
 		return auth.TokenPair{}, err
 	}
 
@@ -54,12 +52,12 @@ func (a *AuthService) Login(ctx context.Context, login auth.Login) (auth.TokenPa
 
 	pkey, err := a.keyStore.PrivateKey(a.kid)
 	if err != nil {
-		return auth.TokenPair{}, fmt.Errorf("error when authenticating user", "err", err)
+		return auth.TokenPair{}, fmt.Errorf("error when fetching private key [kid = %s] : %w", a.kid, err)
 	}
 
 	accessToken, err := at.SignedString(pkey)
 	if err != nil {
-		return auth.TokenPair{}, fmt.Errorf("error when authenticating user", "err", err)
+		return auth.TokenPair{}, fmt.Errorf("error when signing access token : %w", err)
 	}
 
 	refreshPayload := auth.NewRefreshPayload(usr.ID)
@@ -67,7 +65,7 @@ func (a *AuthService) Login(ctx context.Context, login auth.Login) (auth.TokenPa
 
 	refreshToken, err := rt.SignedString(pkey)
 	if err != nil {
-		return auth.TokenPair{}, fmt.Errorf("error when authenticating user", "err", err)
+		return auth.TokenPair{}, fmt.Errorf("error when signing refresh token : %w", err)
 	}
 
 	return auth.TokenPair{
