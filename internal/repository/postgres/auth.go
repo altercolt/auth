@@ -18,10 +18,10 @@ func NewTokenRepository(db *pgxpool.Pool) auth.TokenRepository {
 }
 
 func (r TokenRepository) Create(ctx context.Context, token auth.RefreshToken) error {
-	query := `INSERT INTO tokens (id, user_id, refresh_token, expiration_time) 
-						VALUES ($1, $2, $3, $4); `
+	query := `insert into tokens (user_id, refresh_token, expiration_time)
+									values ($1, $2, $3)`
 
-	_, err := r.db.Exec(ctx, query, &token.ID, &token.UserID, &token.RefreshToken, &token.ExpirationTime)
+	_, err := r.db.Exec(ctx, query, token.UserID, token.RefreshToken, token.ExpirationTime)
 	if err != nil {
 		return err
 	}
@@ -30,8 +30,9 @@ func (r TokenRepository) Create(ctx context.Context, token auth.RefreshToken) er
 }
 
 func (r TokenRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM tokens WHERE id = $1`
-	_, err := r.db.Exec(ctx, query, &id)
+	query := `delete from tokens where id = $1`
+
+	_, err := r.db.Exec(ctx, query, id)
 	if err != nil {
 		return err
 	}
@@ -39,41 +40,33 @@ func (r TokenRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+func (r TokenRepository) FetchOne(ctx context.Context, singleFilter auth.SingleFilter) (auth.RefreshToken, error) {
+	query := `select * from tokens 
+         		where `
+
+}
+
 func (r TokenRepository) Fetch(ctx context.Context, filter auth.Filter) ([]auth.RefreshToken, error) {
-	query := `SELECT * FROM tokens WHERE
-                         $1::uuid IS NULL OR id = ANY($1)
-						AND $2::int IS NULL OR user_id = ANY($2)
-						AND $3::varchar IS NULL OR refresh_token = ANY($3);
-                         `
-	curr, err := r.db.Query(ctx, query, filter.IDs, filter.Users, filter.Tokens)
+	query := `select * from tokens 
+         where 
+             `
+
+	res, err := r.db.Query(ctx, query, filter.IDs, filter.Users, filter.Tokens)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []auth.RefreshToken
+	var tokens []auth.RefreshToken
 
-	for curr.Next() {
+	for res.Next() {
 		var token auth.RefreshToken
-		err = curr.Scan(&token.ID, &token.UserID, &token.RefreshToken, &token.ExpirationTime)
-		if err != nil {
+
+		if err = res.Scan(&token.ID, &token.UserID, &token.RefreshToken, &token.ExpirationTime); err != nil {
 			return nil, err
 		}
-		result = append(result, token)
+
+		tokens = append(tokens, token)
 	}
 
-	return result, nil
-}
-
-func (r TokenRepository) FetchOne(ctx context.Context, filter auth.Filter) (auth.RefreshToken, error) {
-	query := `SELECT * FROM tokens WHERE 
-                         $1 IS NOT NULL OR id = ANY($1)
-                         AND $2 IS NOT NULL OR refresh_token = ANY($2);`
-
-	res := r.db.QueryRow(ctx, query, filter.IDs, filter.Tokens)
-	var token auth.RefreshToken
-	if err := res.Scan(&token.ID, &token.UserID, &token.RefreshToken, &token.ExpirationTime); err != nil {
-		return auth.RefreshToken{}, err
-	}
-
-	return token, nil
+	return tokens, nil
 }

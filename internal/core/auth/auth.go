@@ -1,8 +1,8 @@
 package auth
 
 import (
+	"errors"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"time"
 )
 
@@ -17,7 +17,7 @@ var (
 )
 
 type Login struct {
-	Login    string `json:"login"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
@@ -25,21 +25,19 @@ type Login struct {
 // is the claims part of jwt token
 // stored in context
 type Payload struct {
-	UserID int    `json:"sub"`
+	UserID string `json:"sub"`
 	Role   string `json:"role"`
 	Exp    int64  `json:"exp"`
 }
 
-func NewPayload(userID int, role string) Payload {
+func NewPayload(userID uuid.UUID, role string) Payload {
 	return Payload{
-		UserID: userID,
+		UserID: userID.String(),
 		Role:   role,
 		Exp:    time.Now().Add(AccessTokenExpiration).Unix(),
 	}
 }
 
-// Valid
-// TODO("FINISH")
 func (p Payload) Valid() error {
 	now := time.Now()
 	if now.After(time.Unix(p.Exp, 0)) {
@@ -50,13 +48,13 @@ func (p Payload) Valid() error {
 }
 
 type RefreshPayload struct {
-	UserID int   `json:"refresh_sub"`
-	Exp    int64 `json:"refresh_exp"`
+	UserID string `json:"refresh_sub"`
+	Exp    int64  `json:"refresh_exp"`
 }
 
-func NewRefreshPayload(userID int) RefreshPayload {
+func NewRefreshPayload(userID uuid.UUID) RefreshPayload {
 	return RefreshPayload{
-		UserID: userID,
+		UserID: userID.String(),
 		Exp:    time.Now().Add(RefreshTokenExpiration).Unix(),
 	}
 }
@@ -64,7 +62,7 @@ func NewRefreshPayload(userID int) RefreshPayload {
 func (p RefreshPayload) Valid() error {
 	now := time.Now()
 	if now.After(time.Unix(p.Exp, 0)) {
-		return ErrInvalidAccessToken
+		return ErrInvalidRefreshToken
 	}
 
 	return nil

@@ -3,10 +3,8 @@ package handlers
 import (
 	"auth/cmd/api/handlers/v1/usergrp"
 	auth2 "auth/internal/core/auth"
-	"auth/internal/core/role"
 	"auth/internal/repository/postgres"
 	"auth/internal/service"
-	"auth/internal/web/v1/middleware"
 	"auth/pkg/web"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -23,8 +21,6 @@ func API(shutdown chan os.Signal, log *zap.SugaredLogger, db *pgxpool.Pool) (htt
 		userHandler := usergrp.NewHandler(userService)
 		var auth auth2.Service
 
-		app.Handle(http.MethodPost, "/v1/user", userHandler.Register)
-		app.Handle(http.MethodGet, "/v1/user", userHandler.GetSelf, middleware.Authorize(auth, role.User))
 	}
 	{
 

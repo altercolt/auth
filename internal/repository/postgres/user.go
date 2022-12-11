@@ -2,10 +2,8 @@ package postgres
 
 import (
 	"auth/internal/core/user"
-	"auth/internal/repository"
 	"context"
-	"errors"
-	"github.com/jackc/pgx/v5"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -19,19 +17,10 @@ func NewUserRepository(db *pgxpool.Pool) user.Repository {
 	}
 }
 
-func (r UserRepository) Create(ctx context.Context, m user.Model) error {
-	query := `INSERT INTO users (role_id, email, username, passhash) 
-						VALUES($1, $2, $3, $4);`
+func (u UserRepository) Create(ctx context.Context, m user.Model) error {
+	query := `insert into users (email, passhash) values ($1, $2)`
 
-	_, _ = r.db.Exec(ctx, query, 2, m.Email, m.Username, m.PassHash)
-
-	return nil
-}
-
-func (r UserRepository) Delete(ctx context.Context, id int) error {
-	query := `DELETE FROM users WHERE id = $1`
-
-	_, err := r.db.Exec(ctx, query, id)
+	_, err := u.db.Exec(ctx, query, m.Email, m.PassHash)
 	if err != nil {
 		return err
 	}
@@ -39,14 +28,12 @@ func (r UserRepository) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (r UserRepository) Update(ctx context.Context, m user.Model) error {
-	query := `UPDATE users SET 
-                 email = COALESCE($2)
-                 username = COALESCE($3)
-                 passhash = COALESCE($4)
-                 WHERE id = $1`
+func (u UserRepository) Update(ctx context.Context, m user.Model) error {
+	query := `update users set 
+                 email = coalesce($1, email),
+                 passhash = coalesce($2, passhash)`
 
-	_, err := r.db.Exec(ctx, query, m.ID, m.Email, m.Username, m.PassHash)
+	_, err := u.db.Exec(ctx, query, m.Email, m.PassHash)
 	if err != nil {
 		return err
 	}
@@ -54,65 +41,51 @@ func (r UserRepository) Update(ctx context.Context, m user.Model) error {
 	return nil
 }
 
-func (r UserRepository) Fetch(ctx context.Context, filter user.Filter) ([]user.User, error) {
-	query := `SELECT users.id, roles.name, users.email, users.username, users.passhash FROM users INNER JOIN roles ON users.role_id = roles.id
-				WHERE $1 IS NULL OR users.id = ANY($1)
-				AND $2 IS NULL OR users.email = ANY($2)
-				AND $3 IS NULL OR users.username = ANY($3);`
+func (u UserRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	query := `delete from users where id = $1`
 
-	curr, err := r.db.Query(ctx, query, filter.IDs, filter.Emails, filter.Usernames)
+	tx, err := u.db.Begin(ctx)
 	if err != nil {
-		return nil, err
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, query, id)
+	if err != nil {
+		return err
 	}
 
-	var res []user.User
-	for curr.Next() {
-		var usr user.User
-		if err = curr.Scan(&usr.ID, &usr.Role, &usr.Email, &usr.Username, &usr.PassHash); err != nil {
-			return nil, err
-		}
-		res = append(res, usr)
+	if err = tx.Commit(ctx); err != nil {
+		return err
 	}
 
-	return res, nil
+	return nil
 }
 
-func (r UserRepository) FetchOne(ctx context.Context, filter user.Filter) (user.User, error) {
-	query := `SELECT users.id, roles.name, users.email, users.username, users.passhash FROM users INNER JOIN roles ON users.role_id = roles.id
-				WHERE ($1::int[] IS NULL OR users.id = ANY($1))
-				AND ($2::varchar[] IS NULL OR users.email = ANY($2))
-				AND ($3::varchar[] IS NULL OR users.username = ANY($3));`
+func (u UserRepository) FetchOne(ctx context.Context, f user.SingleFilter) (user.User, error) {
+	query := `select users.id, users.email, users.passhash, role.name from users
+				inner join role on users.role_id = role.id
+				`
 
-	res := r.db.QueryRow(ctx, query, filter.IDs, filter.Emails, filter.Usernames)
-
-	var usr user.User
-	if err := res.Scan(&usr.ID, &usr.Role, &usr.Email, &usr.Username, &usr.PassHash); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return user.User{}, repository.ErrNotFound
-		}
-		return user.User{}, err
-	}
-
-	return usr, nil
 }
 
-func (r UserRepository) FetchOr(ctx context.Context, filter user.Filter) ([]user.User, error) {
-	query := `SELECT users.id, roles.name, users.email, users.username, users.passhash FROM users INNER JOIN roles ON users.role_id = roles.id
-				WHERE users.id = ANY($1) OR users.email = ANY($2) OR users.username = ANY($3)`
+func (u UserRepository) Fetch(ctx context.Context, f user.Filter) ([]user.User, error) {
+	query := `select users.id, users.email, users.passhash, role.name from users
+				inner join role on users. = role.id where 
+				and ($1::uuid[] IS NULL OR users.id = ANY($1)),
+				and ($2::varchar[] IS NULL OR users.email = ANY($2))`
 
-	res, err := r.db.Query(ctx, query, filter.IDs, filter.Emails, filter.Usernames)
+	res, err := u.db.Query(ctx, query, f.IDs, f.Email)
 	if err != nil {
 		return nil, err
 	}
 
 	var users []user.User
-
 	for res.Next() {
 		var usr user.User
-		if err := res.Scan(&usr.ID, &usr.Role, &usr.Email, &usr.Username, &usr.PassHash); err != nil {
+		if err := res.Scan(&usr.ID, &usr.Email, &usr.PassHash, &usr.Role); err != nil {
 			return nil, err
 		}
-
 		users = append(users, usr)
 	}
 

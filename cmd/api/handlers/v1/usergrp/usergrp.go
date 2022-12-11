@@ -2,11 +2,8 @@ package usergrp
 
 import (
 	"auth/internal/core/user"
-	"auth/internal/service"
-	v1 "auth/internal/web/v1"
 	"auth/pkg/web"
 	"context"
-	"fmt"
 	"net/http"
 )
 
@@ -20,36 +17,23 @@ func NewHandler(userService user.Service) Handler {
 	}
 }
 
-func (h Handler) Register(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	var nu user.New
-	if err := web.Decode(r, &nu); err != nil {
-		return fmt.Errorf("cannot read : %w", err)
-	}
+func (h Handler) Signup(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 
-	if err := h.userService.Create(ctx, nu); err != nil {
-		switch err {
-		case service.ErrEmailAlreadyExists:
-			return v1.NewRequestError(err, http.StatusConflict)
-		case service.ErrUsernameAlreadyExists:
-			return v1.NewRequestError(err, http.StatusConflict)
-		default:
-			return err
-		}
-	}
-
-	return web.Respond(ctx, w, nil, http.StatusCreated)
+	return web.Respond()
 }
 
-func (h Handler) GetSelf(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	payload, err := v1.Payload(ctx)
-	if err != nil {
-		return err
-	}
+func (h Handler) Update(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 
-	usr, err := h.userService.GetOneByID(ctx, payload.UserID)
-	if err != nil {
-		return err
-	}
+}
 
-	return web.Respond(ctx, w, usr, http.StatusOK)
+func (h Handler) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+
+}
+
+func (h Handler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+
+}
+
+func (h Handler) GetOne(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+
 }

@@ -1,13 +1,16 @@
 package auth
 
-import "context"
+import (
+	"context"
+)
 
 type Service interface {
 	Login(ctx context.Context, login Login) (TokenPair, error)
-	ValidateAccess(ctx context.Context, accessToken string) (Payload, error)
-}
+	Logout(ctx context.Context, refreshToken string) (Payload, error)
+	RefreshAccess(ctx context.Context, refreshToken string) (TokenPair, error)
 
-type TokenService interface {
-	Create(ctx context.Context)
-	Delete(ctx context.Context)
+	// ValidateAccess
+	// used in auth middleware
+	// for access validation
+	ValidateAccess(ctx context.Context, accessToken string) (Payload, error)
 }

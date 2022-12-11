@@ -1,38 +1,34 @@
 package user
 
-import "auth/internal/core/role"
+import (
+	"auth/internal/core/role"
+	"github.com/google/uuid"
+)
 
 type User struct {
-	ID       int       `json:"id"`
-	Username string    `json:"username"`
+	ID       uuid.UUID `json:"id"`
 	Email    string    `json:"email"`
+	Username string    `json:"username"`
 	Role     role.Role `json:"role"`
 	PassHash string    `json:"-"`
 }
 
-// New
-// is used for creating new user record in the database
 type New struct {
-	Username string `json:"username"`
 	Email    string `json:"email"`
+	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
-// Update
-// not sure about internals yet, but it is used for updating user data
 type Update struct {
-	Username    *string `json:"username"`
-	Email       *string `json:"email"`
-	NewPassword *string `json:"new-password"`
-	Password    *string `json:"password"`
+	Email       *string `json:"email,omitempty"`
+	Username    *string `json:"username,omitempty"`
+	NewPassword *string `json:"new-password,omitempty"`
+	Password    *string `json:"password,omitempty"`
 }
 
-// Model
-// database model
 type Model struct {
-	ID       *int
+	ID       uuid.UUID
 	Email    *string
 	Username *string
-	Role     *role.Role
 	PassHash *string
 }

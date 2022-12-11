@@ -2,12 +2,17 @@ package user
 
 import (
 	"context"
+	"github.com/google/uuid"
 )
 
 type Service interface {
-	GetOneByID(ctx context.Context, id int) (User, error)
-	GetOneByUsername(ctx context.Context, username string) (User, error)
-	GetOneByEmail(ctx context.Context, email string) (User, error)
-	Update(ctx context.Context, id int, update Update) error
 	Create(ctx context.Context, nu New) error
+	Update(ctx context.Context, upd Update) error
+	Delete(ctx context.Context, id uuid.UUID) error
+
+	FetchByUsernames(ctx context.Context, usernames []string)
+	FetchByIDs(ctx context.Context, ids []string)
+	FetchOneByID(ctx context.Context, id string)
+	FetchOneByUsername(ctx context.Context, username string)
+	FetchOneByEmail(ctx context.Context, email string)
 }
