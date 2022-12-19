@@ -35,6 +35,9 @@ func (r TokenRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	_, err := r.db.Exec(ctx, query, id)
 	if err != nil {
 		return err
+
+		errors.Is()
+		errors.As()
 	}
 
 	return nil

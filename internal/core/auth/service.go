@@ -6,7 +6,7 @@ import (
 
 type Service interface {
 	Login(ctx context.Context, login Login) (TokenPair, error)
-	Logout(ctx context.Context, refreshToken string) (Payload, error)
+	Logout(ctx context.Context, refreshToken string) error
 	RefreshAccess(ctx context.Context, refreshToken string) (TokenPair, error)
 
 	// ValidateAccess
