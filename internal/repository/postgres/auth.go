@@ -5,15 +5,18 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
 )
 
 type TokenRepository struct {
-	db *pgxpool.Pool
+	db  *pgxpool.Pool
+	log *zap.SugaredLogger
 }
 
-func NewTokenRepository(db *pgxpool.Pool) auth.TokenRepository {
+func NewTokenRepository(db *pgxpool.Pool, log *zap.SugaredLogger) auth.TokenRepository {
 	return TokenRepository{
-		db: db,
+		db:  db,
+		log: log,
 	}
 }
 
@@ -23,7 +26,7 @@ func (r TokenRepository) Create(ctx context.Context, token auth.RefreshToken) er
 
 	_, err := r.db.Exec(ctx, query, token.UserID, token.RefreshToken, token.ExpirationTime)
 	if err != nil {
-		return err
+		return wrapError()
 	}
 
 	return nil
@@ -35,9 +38,6 @@ func (r TokenRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	_, err := r.db.Exec(ctx, query, id)
 	if err != nil {
 		return err
-
-		errors.Is()
-		errors.As()
 	}
 
 	return nil

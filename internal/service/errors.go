@@ -1,16 +1,22 @@
 package service
 
+import "errors"
+
+var (
+	ErrInvalidCredentials = errors.New("err : invalid credentials")
+)
+
 type DuplicateEntryError struct {
-	msg   string
-	field string
-	dbErr error
+	msg     string
+	field   string
+	repoErr error
 }
 
-func NewDuplicateEntryError(msg string, field string, dbErr error) error {
+func NewDuplicateEntryError(msg string, field string, repoErr error) error {
 	return &DuplicateEntryError{
-		msg:   msg,
-		field: field,
-		dbErr: dbErr,
+		msg:     msg,
+		field:   field,
+		repoErr: repoErr,
 	}
 }
 
@@ -19,5 +25,5 @@ func (e DuplicateEntryError) Error() string {
 }
 
 func (e DuplicateEntryError) Unwrap() error {
-	return e.dbErr
+	return e.repoErr
 }
